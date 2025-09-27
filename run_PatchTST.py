@@ -53,9 +53,6 @@ data_map = {
 }
 
 parameter_sets = []
-# data = "ETTh1"
-# folder = folder_map[data]
-# data_name = data_map[data]
 for data in ["electricity", "traffic"]:
     folder = folder_map[data]
     data_name = data_map[data]
