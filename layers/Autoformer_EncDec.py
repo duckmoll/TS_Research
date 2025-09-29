@@ -98,7 +98,54 @@ class series_decomp_multi_moe(nn.Module):
         res = x - moving_mean
         return res, moving_mean
 
+class series_decomp_multi_moe_mark(nn.Module):
+    """
+    Series decomposition block
+    """
+    def __init__(self, kernel_size):
+        super(series_decomp_multi_moe_mark, self).__init__()
+        self.moving_avg = [moving_avg(kernel, stride=1) for kernel in kernel_size]
+        self.layer = torch.nn.Linear(1, len(kernel_size))
+        self.softmax = nn.Softmax(dim=-1)
 
+    def forward(self, x, x_mark):
+        moving_mean = []
+        for func in self.moving_avg:
+            moving_avg = func(x)
+            moving_mean.append(moving_avg.unsqueeze(-1))
+        moving_mean = torch.cat(moving_mean, dim=-1)
+        gating_input = torch.cat((x, x_mark), dim=-1)
+        moving_mean = torch.sum(moving_mean * nn.Softmax(-1)(self.layer(gating_input.unsqueeze(-1))), dim=-1)
+        res = x - moving_mean
+        return res, moving_mean
+
+class series_decomp_multi_moe_mark_topk(nn.Module):
+    """
+    Series decomposition block
+    """
+    def __init__(self, kernel_size, topk):
+        super(series_decomp_multi_moe_mark_topk, self).__init__()
+        self.topk = topk
+        self.moving_avg = [moving_avg(kernel, stride=1) for kernel in kernel_size]
+        self.layer = torch.nn.Linear(1, len(kernel_size))
+        self.softmax = nn.Softmax(dim=-1)
+
+    def forward(self, x, x_mark):
+        moving_mean = []
+        for func in self.moving_avg:
+            moving_avg = func(x)
+            moving_mean.append(moving_avg.unsqueeze(-1))
+        moving_mean = torch.cat(moving_mean, dim=-1)
+        gating_input = torch.cat((x, x_mark), dim=-1)
+        logits = self.layer(gating_input.unsqueeze(-1))
+
+        top_k_values, top_k_indices = torch.topk(logits, self.topk, dim=-1, largest=True)
+        masked_logits = torch.full_like(logits, float('-inf'))
+        masked_logits.scatter_(dim=-1, index=top_k_indices, src=top_k_values)
+        weights = self.softmax(masked_logits)
+        combined_mean = torch.sum(moving_mean * weights, dim=-1)
+        res = x - combined_mean
+        return res, combined_mean
 
 class EncoderLayer(nn.Module):
     """

@@ -2,7 +2,7 @@ import sys
 import torch
 from torch import nn
 from models.backbone import PatchTST_Backbone
-from layers.Autoformer_EncDec import series_decomp_multi, series_decomp, series_decomp_multi_moe
+from layers.Autoformer_EncDec import series_decomp_multi, series_decomp, series_decomp_multi_moe, series_decomp_multi_moe_mark, series_decomp_multi_moe_mark_topk
 
 torch.autograd.set_detect_anomaly(True)
 
@@ -25,6 +25,10 @@ class Model(nn.Module):
             self.decomp_module = series_decomp_multi([7, 12, 14, 24, 48])
         elif configs.moving_avg_type == "moe":
             self.decomp_module = series_decomp_multi_moe([7, 12, 14, 24, 48])
+        elif configs.moving_avg_type == "multiple_all_moe_mark":
+            self.decomp_module = series_decomp_multi_moe_mark(range(2, configs.seq_len // 2))
+        elif configs.moving_avg_type == "multiple_all_moe_mark_topk":
+            self.decomp_module = series_decomp_multi_moe_mark_topk(range(2, configs.seq_len // 2), configs.moe_topk)
         else:
             self.decomp_module = None
         # self.decomp_module = series_decomp_multi_moe([7, 12, 14, 24, 48])
@@ -34,7 +38,7 @@ class Model(nn.Module):
     def forecast(self, x_enc, x_mark_enc, x_dec, x_mark_dec):
         if self.decomp_module is None:
             return self.model_trend(x_enc)
-        res_init, trend_init = self.decomp_module(x_enc)
+        res_init, trend_init = self.decomp_module(x_enc, x_mark_enc)
         res = self.model_res(res_init)
         trend = self.model_trend(trend_init)
         x = res + trend

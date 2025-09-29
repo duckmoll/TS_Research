@@ -1,5 +1,13 @@
 import pprint
 import pandas as pd
+import re
+
+def extract_content(input_string, regex_pattern):
+    """Extracts content from a string using a regex pattern."""
+    match = re.search(regex_pattern, input_string)
+    # Check if a match was found and extract the captured group (group 1)
+    if match:
+        return match.group(1)
 
 def parse_forecast_data(filepath):
     """
@@ -30,11 +38,18 @@ def parse_forecast_data(filepath):
         # Ensure we have a pair of lines to process
         if i + 1 < len(non_empty_lines):
             identifier = non_empty_lines[i]
+            identifier = identifier.replace("national_illness", "illness")
             metrics_line = non_empty_lines[i+1]
 
             dataset = identifier.replace("long_term_forecast_", "").split('_')[0]
             pred_len = identifier.replace("long_term_forecast_", "").split('_')[2]
-            mode = identifier.replace("long_term_forecast_", "").split('_')[3]
+            # mode = identifier.replace("long_term_forecast_", "").split('_')[3]
+            pattern = r'.*_(?:\d+)_(.*?)_PatchTST'
+            mode = extract_content(identifier, pattern).replace('multipleallmoemarktopk_', "")
+            mode = "NoEncoder" if "Noencoder" in identifier else "Encoder"
+
+            if dataset in ["exchange", "illness"]:
+                continue
 
             data_entry = {
                 "dataset": dataset,
@@ -68,7 +83,7 @@ def parse_forecast_data(filepath):
 
 if __name__ == "__main__":
     # The name of the file to parse
-    filename = 'result_long_term_forecast.txt'
+    filename = 'result_encoder.txt'
 
     # Parse the data from the file
     forecast_results = parse_forecast_data(filename)
@@ -80,9 +95,14 @@ if __name__ == "__main__":
         pprint.pprint(forecast_results)
 
     result_df = pd.DataFrame(forecast_results)
-    column_order = ["raw", "single", "multiple", "moe"]
+    column_order = ["raw", "single", "multiple", "moe", "multiple_all", "multiple_all_moe", "multiple_all_moe_mark"]
+    column_order = ["1", "3", "5", "7", "9"]
+    column_order = ["Encoder", "NoEncoder"]
     row_order = ["96", "192", "336", "720"]
-    result_df = result_df.set_index(["dataset", "pred_len", "mode"]).unstack("mode").reindex(columns=column_order,
+    result_df = result_df.set_index(["dataset", "pred_len", "mode"])
+    print(result_df)
+    result_df.to_excel('result_encoder_stats.xlsx')
+    result_df = result_df.unstack("mode").reindex(columns=column_order,
                         level=-1).reindex(index=row_order, level=-1)
     print(result_df)
-    result_df.to_excel('trend_methods_comparisons.xlsx')
+    result_df.to_excel('result_encoder_stats.xlsx')

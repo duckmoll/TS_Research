@@ -53,52 +53,23 @@ data_map = {
 }
 
 parameter_sets = []
-for data in ["electricity", "traffic"]:
+for data in ["ETTh1", "electricity", "traffic"]:
     folder = folder_map[data]
     data_name = data_map[data]
-    for pred_len in [96]:
-        new_params = [
-            {
-                **default_dict,
-                "root_path": f"../dataset/{folder}",
-                "data_path": f"{data}.csv",
-                "model_id": f"{data}_336_{pred_len}_raw",
-                "model": "PatchTST_Decomp",
-                "data": data_name,
-                "pred_len": pred_len,
-                "moving_avg_type": "raw"
-            },
-            {
-                **default_dict,
-                "root_path": f"../dataset/{folder}",
-                "data_path": f"{data}.csv",
-                "model_id": f"{data}_336_{pred_len}_single",
-                "model": "PatchTST_Decomp",
-                "data": data_name,
-                "pred_len": pred_len,
-                "moving_avg_type": "single"
-            },
-            {
-                **default_dict,
-                "root_path": f"../dataset/{folder}",
-                "data_path": f"{data}.csv",
-                "model_id": f"{data}_336_{pred_len}_multiple",
-                "model": "PatchTST_Decomp",
-                "data": data_name,
-                "pred_len": pred_len,
-                "moving_avg_type": "multiple"
-            },
-            {
-                **default_dict,
-                "root_path": f"../dataset/{folder}",
-                "data_path": f"{data}.csv",
-                "model_id": f"{data}_336_{pred_len}_moe",
-                "model": "PatchTST_Decomp",
-                "data": data_name,
-                "pred_len": pred_len,
-                "moving_avg_type": "moe"
-            },
-        ]
+    for pred_len in [96, 192, 336, 720]:
+        for k in [1, 3, 5, 7, 9]:
+            new_params = [
+                {
+                    **default_dict,
+                    "root_path": f"../dataset/{folder}",
+                    "data_path": f"{data}.csv",
+                    "model_id": f"{data}_336_{pred_len}_moe_patch",
+                    "model": "PatchTST_MoE",
+                    "data": data_name,
+                    "pred_len": pred_len,
+                    "moe_topk": k,
+                },
+            ]
         parameter_sets += new_params
 
 python_executable = sys.executable
