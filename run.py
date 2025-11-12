@@ -25,6 +25,7 @@ if __name__ == '__main__':
     parser.add_argument('--model', type=str, default='PatchTST',
                         help='model name, options: [Autoformer, Transformer, TimesNet]')
     parser.add_argument('--moving_avg_type', type=str, default='none')
+    parser.add_argument('--moe_topk', type=int, default=1)
 
     # data loader
     parser.add_argument('--data', type=str, default='ETTh1', help='dataset type')

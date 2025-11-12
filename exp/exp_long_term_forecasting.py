@@ -1,3 +1,5 @@
+import sys
+
 from data_provider.data_factory import data_provider
 from exp.exp_basic import Exp_Basic
 from utils.tools import EarlyStopping, adjust_learning_rate, visual
@@ -11,6 +13,7 @@ import warnings
 import numpy as np
 from utils.dtw_metric import dtw, accelerated_dtw
 from utils.augmentation import run_augmentation, run_augmentation_single
+from torch.profiler import profile, record_function, ProfilerActivity
 
 warnings.filterwarnings('ignore')
 
@@ -122,8 +125,15 @@ class Exp_Long_Term_Forecast(Exp_Basic):
                         loss = criterion(outputs, batch_y)
                         train_loss.append(loss.item())
                 else:
+                    # with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],  # Profile both CPU and GPU
+                    #              record_shapes=True,  # Record tensor shapes
+                    #              profile_memory=True) as prof:  # Track memory usage
+                    #     outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+                    # print(prof.key_averages().table(sort_by="cuda_time_total", row_limit=10))
+                    # trainable_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
+                    # print(f"Number of trainable parameters: {trainable_params}")
+                    # sys.exit()
                     outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
-
                     f_dim = -1 if self.args.features == 'MS' else 0
                     outputs = outputs[:, -self.args.pred_len:, f_dim:]
                     batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)

@@ -1,31 +1,19 @@
+
 import subprocess
 import sys
+from run_parameters import Patch_ECL_S, Patch_ETTh1_S, Patch_traffic_S, Patch_ECL_L, Patch_ETTh1_L, Patch_traffic_L
 
 default_dict = {
     "task_name": "long_term_forecast",
     "is_training": 1,
-    "features": "S",
+    "features": "M",
     "seq_len": 336,
     "label_len": 48,
-    "e_layers": 3,
-    "d_layers": 1,
-    "factor": 1,
-    "enc_in": 1,
-    "dec_in": 7,
-    "c_out": 1,
     "des": "Exp",
-    "n_heads": 4,
-    "d_ff": 128,
-    "d_model": 16,
     "train_epochs": 100,
-    "batch_size": 128,
-    "dropout": 0.3,
     "itr": 1,
-    "patch_len": 16,
-    "patch_stride": 8,
-    "learning_rate": 1e-4,
-    "lradj": "type3",
-    "moving_avg_type": "moe"
+    "learning_rate": 1e-3,
+    "lradj": "cosine",
 }
 
 folder_map = {
@@ -56,20 +44,30 @@ parameter_sets = []
 for data in ["ETTh1", "electricity", "traffic"]:
     folder = folder_map[data]
     data_name = data_map[data]
+    data_param_L = None
+    data_param_S = None
+    if data == "ETTh1":
+        data_param_L = Patch_ETTh1_L
+        data_param_S = Patch_ETTh1_S
+    elif data == "electricity":
+        data_param_L = Patch_ECL_L
+        data_param_S = Patch_ECL_S
+    elif data == "traffic":
+        data_param_L = Patch_traffic_L
+        data_param_S = Patch_traffic_S
     for pred_len in [96, 192, 336, 720]:
-        for k in [1, 3, 5, 7, 9]:
-            new_params = [
-                {
-                    **default_dict,
-                    "root_path": f"../dataset/{folder}",
-                    "data_path": f"{data}.csv",
-                    "model_id": f"{data}_336_{pred_len}_moe_patch",
-                    "model": "PatchTST_MoE",
-                    "data": data_name,
-                    "pred_len": pred_len,
-                    "moe_topk": k,
-                },
-            ]
+        new_params = [
+            {
+                **default_dict,
+                **data_param_L,
+                "root_path": f"../dataset/{folder}",
+                "data_path": f"{data}.csv",
+                "model_id": f"{data}_336_{pred_len}",
+                "model": "ViT_Combined",
+                "data": data_name,
+                "pred_len": pred_len,
+            },
+        ]
         parameter_sets += new_params
 
 python_executable = sys.executable
@@ -79,7 +77,7 @@ for params in parameter_sets:
 
     cmd = [
         python_executable,
-        "D:\\Projects\\TS_Research\\run.py",
+        "/u/jliu61/TS_Research/run.py",
     ]
 
     for k, v in params.items():
@@ -89,6 +87,7 @@ for params in parameter_sets:
 
     # Run the command
     # `check=True` will raise an error if the script fails
+    print(cmd)
     subprocess.run(cmd, check=True)
 
 print("All runs completed.")

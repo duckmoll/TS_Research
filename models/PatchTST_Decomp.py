@@ -18,6 +18,7 @@ class Model(nn.Module):
         """
         super().__init__()
         self.pred_len = configs.pred_len
+        self.moving_avg_type = configs.moving_avg_type
         # kernel_size = configs.moving_avg
         if configs.moving_avg_type == "single":
             self.decomp_module = series_decomp(24)
@@ -25,6 +26,10 @@ class Model(nn.Module):
             self.decomp_module = series_decomp_multi([7, 12, 14, 24, 48])
         elif configs.moving_avg_type == "moe":
             self.decomp_module = series_decomp_multi_moe([7, 12, 14, 24, 48])
+        elif configs.moving_avg_type == "multiple_all":
+            self.decomp_module = series_decomp_multi(range(2, configs.seq_len // 2))
+        elif configs.moving_avg_type == "multiple_all_moe":
+            self.decomp_module = series_decomp_multi_moe(range(2, configs.seq_len // 2))
         elif configs.moving_avg_type == "multiple_all_moe_mark":
             self.decomp_module = series_decomp_multi_moe_mark(range(2, configs.seq_len // 2))
         elif configs.moving_avg_type == "multiple_all_moe_mark_topk":
@@ -38,7 +43,10 @@ class Model(nn.Module):
     def forecast(self, x_enc, x_mark_enc, x_dec, x_mark_dec):
         if self.decomp_module is None:
             return self.model_trend(x_enc)
-        res_init, trend_init = self.decomp_module(x_enc, x_mark_enc)
+        elif self.moving_avg_type in ["multiple_all_moe_mark", "multiple_all_moe_mark_topk"]:
+            res_init, trend_init = self.decomp_module(x_enc, x_mark_enc)
+        else:
+            res_init, trend_init = self.decomp_module(x_enc)
         res = self.model_res(res_init)
         trend = self.model_trend(trend_init)
         x = res + trend

@@ -3,7 +3,8 @@ import torch
 from models import Autoformer, Transformer, TimesNet, Nonstationary_Transformer, DLinear, FEDformer, \
     Informer, LightTS, Reformer, ETSformer, Pyraformer, PatchTST, MICN, Crossformer, FiLM, iTransformer, \
     Koopa, TiDE, FreTS, TimeMixer, TSMixer, SegRNN, MambaSimple, TemporalFusionTransformer, SCINet, PAttn, TimeXer, \
-    WPMixer, MultiPatchFormer, KANAD, PatchTST_Decomp, PatchTST_Raw, PatchTST_MoE
+    WPMixer, MultiPatchFormer, KANAD, PatchTST_Decomp, PatchTST_Raw, PatchTST_Noencoder, PatchTST_MoE, PatchTST_MoEPatch_Decomp, \
+    PatchTST_Decomp_MoEPatch, ViT_Raw
 
 
 class Exp_Basic(object):
@@ -42,7 +43,11 @@ class Exp_Basic(object):
             'KANAD': KANAD,
             "PatchTST_Decomp": PatchTST_Decomp,
             "PatchTST_Raw": PatchTST_Raw,
-            "PatchTST_MoE": PatchTST_MoE
+            "PatchTST_MoE": PatchTST_MoE,
+            "PatchTST_Noencoder": PatchTST_Noencoder,
+            "PatchTST_MoEPatch_Decomp": PatchTST_MoEPatch_Decomp,
+            "PatchTST_Decomp_MoEPatch": PatchTST_Decomp_MoEPatch,
+            "ViT_Pretrained": ViT_Pretrained
         }
         if args.model == 'Mamba':
             print('Please make sure you have successfully installed mamba_ssm')

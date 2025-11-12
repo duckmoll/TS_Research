@@ -45,8 +45,16 @@ def parse_forecast_data(filepath):
             pred_len = identifier.replace("long_term_forecast_", "").split('_')[2]
             # mode = identifier.replace("long_term_forecast_", "").split('_')[3]
             pattern = r'.*_(?:\d+)_(.*?)_PatchTST'
-            mode = extract_content(identifier, pattern).replace('multipleallmoemarktopk_', "")
-            mode = "NoEncoder" if "Noencoder" in identifier else "Encoder"
+            mode = extract_content(identifier, pattern)
+
+            if "PatchTST" in identifier:
+                mode = "PatchTST"
+            elif "ViT_Decomp" in identifier:
+                mode = "ViT_Decomp"
+            elif "Combined" in identifier:
+                mode = "ViT_Combined"
+            else:
+                mode = "ViT"
 
             if dataset in ["exchange", "illness"]:
                 continue
@@ -83,7 +91,7 @@ def parse_forecast_data(filepath):
 
 if __name__ == "__main__":
     # The name of the file to parse
-    filename = 'result_encoder.txt'
+    filename = 'Vit_Patch_num_len.txt'
 
     # Parse the data from the file
     forecast_results = parse_forecast_data(filename)
@@ -98,11 +106,18 @@ if __name__ == "__main__":
     column_order = ["raw", "single", "multiple", "moe", "multiple_all", "multiple_all_moe", "multiple_all_moe_mark"]
     column_order = ["1", "3", "5", "7", "9"]
     column_order = ["Encoder", "NoEncoder"]
+    column_order = ["Raw", "DecompMoE", "PatchMoE", "MoEPatchDecomp", "DecompMoEPatch"]
+    column_order = sorted(result_df["mode"].unique())
+    column_order = ["len32stride32", "len32stride16", "len32stride8", "len32stride4", "len32stride2", "len32stride1",
+                    "len16stride16", "len16stride8", "len16stride4", "len16stride2", "len16stride1",
+                    "len8stride8", "len8stride4", "len8stride2", "len8stride1",
+                    "len4stride4", "len4stride2", "len4stride1", "len2stride1", "len1stride1",]
+    column_order = ["PatchTST", "ViT", "ViT_Decomp", "ViT_Combined"]
     row_order = ["96", "192", "336", "720"]
     result_df = result_df.set_index(["dataset", "pred_len", "mode"])
-    print(result_df)
-    result_df.to_excel('result_encoder_stats.xlsx')
-    result_df = result_df.unstack("mode").reindex(columns=column_order,
+    result_df = result_df[~result_df.index.duplicated(keep='first')]
+    result_df = result_df.unstack("mode")
+    result_df = result_df.reindex(columns=column_order,
                         level=-1).reindex(index=row_order, level=-1)
     print(result_df)
-    result_df.to_excel('result_encoder_stats.xlsx')
+    result_df.to_excel('Vit_Patch_num_len_results.xlsx')
