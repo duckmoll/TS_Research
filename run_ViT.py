@@ -63,7 +63,7 @@ for data in ["ETTh1", "electricity", "traffic"]:
                 "root_path": f"../dataset/{folder}",
                 "data_path": f"{data}.csv",
                 "model_id": f"{data}_336_{pred_len}",
-                "model": "ViT_Combined",
+                "model": "ViT_MAEFrozen",
                 "data": data_name,
                 "pred_len": pred_len,
             },
@@ -77,8 +77,13 @@ for params in parameter_sets:
 
     cmd = [
         python_executable,
-        "/u/jliu61/TS_Research/run.py",
+        "run.py",
     ]
+
+    # cmd = [
+    #     python_executable,
+    #     "/u/jliu61/TS_Research/run.py",
+    # ]
 
     for k, v in params.items():
         cmd.extend(["--" + str(k), str(v)])

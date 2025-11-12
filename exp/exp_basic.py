@@ -4,7 +4,7 @@ from models import Autoformer, Transformer, TimesNet, Nonstationary_Transformer,
     Informer, LightTS, Reformer, ETSformer, Pyraformer, PatchTST, MICN, Crossformer, FiLM, iTransformer, \
     Koopa, TiDE, FreTS, TimeMixer, TSMixer, SegRNN, MambaSimple, TemporalFusionTransformer, SCINet, PAttn, TimeXer, \
     WPMixer, MultiPatchFormer, KANAD, PatchTST_Decomp, PatchTST_Raw, PatchTST_Noencoder, PatchTST_MoE, PatchTST_MoEPatch_Decomp, \
-    PatchTST_Decomp_MoEPatch, ViT_Raw
+    PatchTST_Decomp_MoEPatch, ViT_MAEFrozen
 
 
 class Exp_Basic(object):
@@ -47,7 +47,7 @@ class Exp_Basic(object):
             "PatchTST_Noencoder": PatchTST_Noencoder,
             "PatchTST_MoEPatch_Decomp": PatchTST_MoEPatch_Decomp,
             "PatchTST_Decomp_MoEPatch": PatchTST_Decomp_MoEPatch,
-            "ViT_Pretrained": ViT_Pretrained
+            "ViT_MAEFrozen": ViT_MAEFrozen
         }
         if args.model == 'Mamba':
             print('Please make sure you have successfully installed mamba_ssm')

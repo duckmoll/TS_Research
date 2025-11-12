@@ -47,6 +47,7 @@ class Model(nn.Module):
         self.padding = stride
         self.patch_len = patch_len
         self.stride = stride
+        self.pretrain_img_size = 224
 
         # patching and embedding
         self.padding_patch_layer = nn.ReplicationPad1d((0, self.padding))
@@ -71,19 +72,18 @@ class Model(nn.Module):
         )
 
         # Imaging Components
-        self.vit = timm.models.VisionTransformer(
-            img_size=(patch_len, patch_num),
-            patch_size=(stride, stride),
-            in_chans=1,
-            num_classes=0,  # No classification head
-            embed_dim=configs.d_model,
-            depth=3,
-            num_heads=4,
-            qkv_bias=True,
-            drop_rate=configs.dropout,
-            attn_drop_rate=configs.dropout
-        )
-        self.vit_forecast = nn.Linear(configs.d_model, configs.pred_len)
+        self.vit = timm.create_model('vit_base_patch16_224.mae', pretrained=True)
+
+        # Remove the classification head
+        self.vit.head = nn.Identity()
+
+        # Freeze all parameters in the ViT
+        for param in self.vit.parameters():
+            param.requires_grad = False
+
+        # Forecasting head, input dim must match the ViT's embedding dim
+        # self.vit.embed_dim for vit_base_patch16_224 is 768
+        self.vit_forecast = nn.Linear(self.vit.embed_dim, configs.pred_len)
 
     def forecast(self, x_enc, x_mark_enc, x_dec, x_mark_dec):
         # Normalization from Non-stationary Transformer
@@ -101,9 +101,27 @@ class Model(nn.Module):
         x = self.padding_patch_layer(x_enc)
         x = x.unfold(dimension=-1, size=self.patch_len, step=self.stride)
         x = torch.reshape(x, (x.shape[0] * x.shape[1], x.shape[3], x.shape[2]))
+
+        # Reshape to [B*C, 1, H, W] where H=patch_len, W=patch_num
         x = x.unsqueeze(1)
-        x_enc = self.vit.forward_features(x)
-        cls_token_embedding = x_enc[:, 0]
+        BC_batch, _, H_small, W_small = x.shape
+
+        # 1. Handle Channel Mismatch: Repeat 1 channel to 3 channels
+        x = x.repeat(1, 3, 1, 1)  # Shape: [B*C, 3, H_small, W_small]
+
+        # 2. Handle Size Mismatch: Pad to pre-trained model's input size (e.g., 224x224)
+        # Create a zero tensor (canvas) of the target size
+        padded_x = torch.zeros(
+            BC_batch, 3, self.pretrain_img_size, self.pretrain_img_size,
+            device=x.device, dtype=x.dtype
+        )
+
+        # Place the small image at the top-left corner
+        padded_x[:, :, :H_small, :W_small] = x
+
+        # Pass the padded 224x224 image to the ViT
+        # With head=nn.Identity(), self.vit(padded_x) returns the CLS token embedding
+        cls_token_embedding = self.vit(padded_x)  # Shape: [B*C, embed_dim (768)]
 
         y = self.vit_forecast(cls_token_embedding)
         y = torch.reshape(y, (B, C, self.pred_len))
